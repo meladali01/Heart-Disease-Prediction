@@ -5,8 +5,11 @@ services:
     build: .
     ports:
       - "5000:5000"
+    # By default the image ships with a baked sample model at /app/models/knn_final.joblib
+    # If you want to override or iterate on models locally, uncomment the models volume below.
+    # volumes:
+    #   - ./models:/app/models
     volumes:
-      - ./models:/app/models
       - ./data:/app/data
     environment:
       - MODEL_PATH=/app/models/knn_final.joblib
