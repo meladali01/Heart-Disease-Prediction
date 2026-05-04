@@ -5,3 +5,4 @@ joblib
 requests
 flask
 pytest
+flasgger

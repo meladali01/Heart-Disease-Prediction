@@ -4,8 +4,10 @@ import joblib
 import pandas as pd
 from .data import load_data
 import os
+from flasgger import Swagger
 
 app = Flask(__name__)
+Swagger(app)
 
 # Configuration: model path can be overridden via env or app config
 DEFAULT_MODEL_PATH = os.environ.get("MODEL_PATH", "models/knn_final.joblib")
