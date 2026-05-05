@@ -5,9 +5,17 @@ import pandas as pd
 from .data import load_data
 import os
 from flasgger import Swagger
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+import time
 
 app = Flask(__name__)
 Swagger(app)
+
+# Prometheus metrics
+REQUEST_COUNT = Counter(
+    "http_requests_total", "Total HTTP requests", ["method", "endpoint", "http_status"]
+)
+REQUEST_LATENCY = Histogram("http_request_latency_seconds", "Request latency", ["endpoint"])
 
 # Configuration: model path can be overridden via env or app config
 DEFAULT_MODEL_PATH = os.environ.get("MODEL_PATH", "models/knn_final.joblib")
@@ -71,6 +79,32 @@ def _prepare_input(data, feature_cols):
 
     X = pd.DataFrame([row], columns=feature_cols)
     return X
+
+
+@app.before_request
+def start_timer():
+    request._start_time = time.time()
+
+
+@app.after_request
+def record_metrics(response):
+    try:
+        endpoint = request.path
+        status = response.status_code
+        method = request.method
+        latency = max(0.0, time.time() - getattr(request, "_start_time", time.time()))
+        REQUEST_COUNT.labels(method=method, endpoint=endpoint, http_status=status).inc()
+        REQUEST_LATENCY.labels(endpoint=endpoint).observe(latency)
+    except Exception:
+        pass
+    return response
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    # Expose Prometheus metrics
+    resp = generate_latest()
+    return (resp, 200, {"Content-Type": CONTENT_TYPE_LATEST})
 
 
 @app.route("/predict", methods=["POST"])

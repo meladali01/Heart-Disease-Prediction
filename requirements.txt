@@ -6,3 +6,4 @@ requests
 flask
 pytest
 flasgger
+prometheus_client
